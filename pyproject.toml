@@ -1,0 +1,16 @@
+[project]
+name = "location-aware-ai-assistant"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "chainlit>=2.6.3",
+    "dotenv>=0.9.9",
+    "googlemaps>=4.10.0",
+    "openai-agents>=0.2.3",
+    "pywhatkit>=5.4",
+    "requests>=2.32.4",
+    "streamlit>=1.47.1",
+    "urllib3>=2.5.0",
+]
