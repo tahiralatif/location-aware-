@@ -8,8 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
-.env
+env
 
  git add .
- git commit -m "env file update"
+ git commit -m "again env file update"
  git push
