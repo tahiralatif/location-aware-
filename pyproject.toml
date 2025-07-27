@@ -7,10 +7,13 @@ requires-python = ">=3.12"
 dependencies = [
     "chainlit>=2.6.3",
     "dotenv>=0.9.9",
+    "fastapi>=0.115.14",
     "googlemaps>=4.10.0",
     "openai-agents>=0.2.3",
     "pywhatkit>=5.4",
     "requests>=2.32.4",
     "streamlit>=1.47.1",
+    "streamlit-lottie>=0.0.5",
     "urllib3>=2.5.0",
+    "uvicorn>=0.35.0",
 ]
