@@ -9,9 +9,6 @@ load_dotenv()
 # -------------------- 1. Get Location from IP --------------------
 @function_tool
 def get_location_from_ip() -> dict:
-    """
-    Returns city, country, latitude, longitude, and a user-friendly description.
-    """
     try:
         response = requests.get("https://ipinfo.io/json")
         data = response.json()
@@ -32,6 +29,7 @@ def get_location_from_ip() -> dict:
         }
     except Exception as e:
         return {"error": f"❌ Error retrieving location: {str(e)}"}
+
 
 
 
@@ -58,6 +56,8 @@ def get_weather_from_location(latitude: str, longitude: str) -> str:
 
         weather = data["weather"][0]["description"]
         temp = data["main"]["temp"]
+        city = data.get("name", "Unknown City")
+        country = data.get("sys", {}).get("country", "Unknown Country")
 
         return f"🌤️ The current weather is **{weather}** with a temperature of **{temp}°C**."
     except Exception as e:
@@ -98,7 +98,7 @@ def get_nearby_places_osm(lat, lon, radius=1000):
 
     return results 
 
-    return output
+   
 
 
 # -------------------- 4. Real-Time Weather Alerts --------------------
@@ -130,8 +130,15 @@ def get_weather_alerts_from_location(latitude: str, longitude: str) -> str:
             event = alert.get("event", "Weather Alert")
             sender = alert.get("sender_name", "N/A")
             description = alert.get("description", "").strip().replace('\n', ' ')
+
+            if len(description) > 300:
+                description = description[:297] + "..."
+                extra = " [Read more in the full alert.]"
+            else:
+                extra = ""
+
             alert_msgs.append(
-                f"⚠️ **{event}** from *{sender}*\n📄 {description[:300]}..."  # limit to 300 chars
+                f"⚠️ **{event}** from *{sender}*\n📄 {description}{extra}\n📍 Location: {latitude}, {longitude}"
             )
 
         return "\n\n".join(alert_msgs)

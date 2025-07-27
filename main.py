@@ -1,73 +1,95 @@
 from agents import Agent, OpenAIChatCompletionsModel , AsyncOpenAI ,Runner, RunConfig
+# from openai.types.responses import ResponseTextDeltaEvent
 from dotenv import load_dotenv
 from tools import get_location_from_ip, get_weather_from_location, get_nearby_places_osm, get_weather_alerts_from_location
 import os
+import chainlit as cl
 import asyncio
+
 load_dotenv()
 
-
-async def main():
-    
-
+@cl.on_chat_start
+async def start_chat():
     API_KEY = os.getenv("GEMINI_API_KEY")
     if not API_KEY:
         raise ValueError("GEMINI_API_KEY is not set in the environment variables.")
-    MODEL_NAME= "gemini-2.0-flash"  
+    MODEL_NAME= "gemini-1.5-flash"  
 
-    # step 1 creat provider ----------
     extternal_clientt = AsyncOpenAI(
         api_key= API_KEY,
         base_url= "https://generativelanguage.googleapis.com/v1beta/openai/"       
     )
 
-    # step 2 create model ----------
     model = OpenAIChatCompletionsModel(
         openai_client= extternal_clientt,
         model= MODEL_NAME,
-    
     )
 
-
-    config =  RunConfig(
+    config = RunConfig(
         model= model,
         model_provider= extternal_clientt,
         tracing_disabled= True,
-
     )
 
-    triage_Agent = Agent(
-        name= "Location-Aware AI Assistant",
+    agent = Agent(
+        name= "CitySense",
         instructions = """
-You are CitySense — a smart, location-aware AI assistant.
+You are a helpful assistant specialized in location-based services.
 
-Your core task is to:
-1. Detect the user's current location.
-2. Fetch real-time weather information based on that location.
-3. Find nearby essential places such as clinics, restaurants, or user-specified services.
-4. Alert the user if any real-time weather warnings or alerts exist for their area.
+Your capabilities include:
+- Detecting user location using IP.
+- Providing real-time weather conditions.
+- Showing nearby places (using OpenStreetMap).
+- Giving weather alerts like storms or heatwaves.
 
-You must:
-- Use the available tools *only when required*.
-- Combine the location, weather, alerts (if any), and nearby places into a **clear, concise, and user-friendly response**.
-- Make sure your answers are structured, helpful, and use simple, human-like language.
-- Default to Celsius for temperature unless otherwise specified.
-- Ask follow-up questions only when needed (e.g., when radius or category of places is unclear).
+Strictly follow these rules:
+1. Only respond to location-based or weather-related queries.
+2. If the query is unrelated (e.g. history, jokes, random coding), politely refuse and guide the user back to location tools.
+3. For every location task, if coordinates are missing, first call `get_location_from_ip`.
+4. If the user asks about nearby amenities (restaurants, hospitals, etc.), use `get_nearby_places_osm`.
+5. When showing alerts, always call `get_weather_alerts_from_location` after confirming location.
+6. Keep all responses short, structured, and include emoji-based feedback (✅, ❌, ⚠️ etc.).
+7. Do not hallucinate locations. Always use tool responses for output.
+
+Only rely on tool functions for any location, weather, or nearby place data.
+
 """,
-        tools=[get_location_from_ip, get_weather_from_location , get_nearby_places_osm, get_weather_alerts_from_location],
-      
+        tools=[get_location_from_ip, get_weather_from_location, get_nearby_places_osm, get_weather_alerts_from_location],
     )
 
-    result = await Runner.run(
-        starting_agent= triage_Agent,
-        input = "What's my location, what's the weather, and show me nearby clinic.",
-        run_config= config
+    # 🧠 Save into memory session
+    cl.user_session.set("agent", agent)
+    cl.user_session.set("history", [])
+    cl.user_session.set("run_config", config)
+
+    await cl.Message("👋 Welcome to **CitySense**!\n I can help you find your location, show the weather, and find nearby places like clinics or restaurants").send()
+   
+
+
+@cl.on_message
+async def main(message: cl.Message):    
+    msg = await cl.Message(content="⏳ Processing your request...").send()
+
+    # 🧠 Retrieve from session using correct key names
+    agent = cl.user_session.get("agent")
+    history = cl.user_session.get("history")
+    config = cl.user_session.get("run_config")
+
+    history.append({"role": "user", "content": message.content})
+
+    result = Runner.run_sync(
+        starting_agent= agent,
+        input = history,
+        run_config= config,
     )
 
-    answer = result.final_output
-    print(f"Answer : \n {answer}")  
+    
+    msg.content = result.final_output
+    await msg.update()
+
+    # 🧠 
+    cl.user_session.set("history", result.to_input_list())
+    print("Result Final Output:", result.final_output)
 
 
 
-
-if __name__ == "__main__":
-    asyncio.run(main())
