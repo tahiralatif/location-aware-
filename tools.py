@@ -3,6 +3,7 @@ from agents import function_tool
 import requests
 import os
 from dotenv import load_dotenv
+import streamlit as st
 
 load_dotenv()
 
@@ -40,7 +41,8 @@ def get_weather_from_location(latitude: str, longitude: str) -> str:
     Get current weather for the given coordinates.
     """
     try:
-        api_key = os.getenv("OPENWEATHERMAP_API_KEY")
+        api_key = st.secrets["OPENWEATHERMAP_API_KEY"]
+
         if not api_key:
             return "❌ API key for OpenWeatherMap is missing. Set it in your .env file."
 
@@ -109,7 +111,8 @@ def get_weather_alerts_from_location(latitude: str, longitude: str) -> str:
     Returns user-friendly alert message or a safe status.
     """
     try:
-        api_key = os.getenv("OPENWEATHERMAP_API_KEY")
+        api_key = st.secrets["OPENWEATHERMAP_API_KEY"]
+
         if not api_key:
             return "❌ API key for OpenWeatherMap is missing. Set it in your .env file."
 

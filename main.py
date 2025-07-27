@@ -82,7 +82,8 @@ query = st.text_input("💬 Ask me something location-based:")
 
 # ============ Agent Initialization ============ #
 if "agent" not in st.session_state:
-    API_KEY = os.getenv("GEMINI_API_KEY")
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+
     if not API_KEY:
         st.error("❌ GEMINI_API_KEY not found in .env")
     else:
